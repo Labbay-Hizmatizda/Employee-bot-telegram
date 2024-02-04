@@ -1,3 +1,6 @@
-# created by virtualenv automatically
+
+/venv
 
 .DS_Store
+
+.idea
