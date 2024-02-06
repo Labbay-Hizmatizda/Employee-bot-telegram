@@ -8,6 +8,7 @@ user_data = {}
 conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
 
+
 @bot.message_handler(commands=['start'])
 def handle_services_worker(message):
     user_id = message.from_user.id
@@ -22,6 +23,7 @@ def handle_services_worker(message):
         bot.send_message(user_id, "Введите ваше И.Ф.О (имя, фамилия, отчество):")
         bot.register_next_step_handler(message, handle_worker_info)
 
+
 def handle_worker_info(message):
     user_id = message.from_user.id
     user_name = message.text
@@ -32,6 +34,7 @@ def handle_worker_info(message):
 
     bot.send_message(user_id, "Теперь введите вашу дату рождения (дд.мм.гггг):")
     bot.register_next_step_handler(message, handle_worker_birthday)
+
 
 def handle_worker_birthday(message):
     user_id = message.from_user.id
@@ -44,6 +47,7 @@ def handle_worker_birthday(message):
     bot.send_message(user_id, "Теперь введите ваши паспортные данные:")
     bot.register_next_step_handler(message, handle_worker_passport)
 
+
 def handle_worker_passport(message):
     user_id = message.from_user.id
     user_passport = message.text
@@ -51,11 +55,20 @@ def handle_worker_passport(message):
     cursor.execute("UPDATE workers SET passport=? WHERE user_id=?", (user_passport, user_id))
     conn.commit()
 
-    bot.send_message(user_id, "Отлично! Теперь вы можете использовать команду /services для просмотра доступных действий.")
+    bot.send_message(user_id,
+                     "Отлично! Теперь вы можете использовать команду /jobs для просмотра доступных действий.")
 
 
-@bot.message_handler(commands=['services'])
-def handle_services(message):
+@bot.message_handler(commands=['add_proposal'])
+def add_job_proposal(message):
+    # TODO: Add proposal | proposal includes message,
+    #  | everything should be added step by step and saved to db sqlite3
+    pass
+
+
+@bot.message_handler(commands=['proposals'])
+def list_job_proposals(message):
+    # TODO: show list of submitted proposals for jobs, and buttons to cancel, or edit
     pass
 
 
