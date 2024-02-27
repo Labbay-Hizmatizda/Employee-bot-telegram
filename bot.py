@@ -5,7 +5,7 @@ bot = telebot.TeleBot('6956163861:AAHiedP7PYOWS-QHeLSqyhGtJsm5aSkFrE8')
 
 user_data = {}
 
-conn = sqlite3.connect('users.db')
+conn = sqlite3.connect('users.sqlite3', check_same_thread=False)
 cursor = conn.cursor()
 
 
@@ -26,7 +26,7 @@ def handle_services_worker(message):
 
 def handle_worker_info(message):
     user_id = message.from_user.id
-    user_name = message.text
+    user_name = message.textZ
 
     # Save user information to the database
     cursor.execute("INSERT INTO workers (user_id, user_name) VALUES (?, ?)", (user_id, user_name))
