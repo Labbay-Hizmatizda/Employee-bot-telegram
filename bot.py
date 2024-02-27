@@ -1,5 +1,6 @@
 import sqlite3
 import telebot
+from telebot import types
 from datetime import datetime
 
 bot = telebot.TeleBot('6956163861:AAHiedP7PYOWS-QHeLSqyhGtJsm5aSkFrE8')
@@ -147,5 +148,5 @@ def query_handler(call):
 
 
 
-if name == "__main__":
+if __name__ == "__main__":
     bot.polling(none_stop=True)
