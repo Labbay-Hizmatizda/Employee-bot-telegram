@@ -5,7 +5,7 @@ bot = telebot.TeleBot('6956163861:AAHiedP7PYOWS-QHeLSqyhGtJsm5aSkFrE8')
 
 user_data = {}
 
-conn = sqlite3.connect('users.sqlite3', check_same_thread=False)
+conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
 
 
