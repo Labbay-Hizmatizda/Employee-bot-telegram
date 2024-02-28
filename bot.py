@@ -24,35 +24,58 @@ def handle_services_worker(message):
 
     if existing_user:
         bot.send_message(user_id, "Добро пожаловать обратно! tipa regestratsiya otboldi")
-    elif message.contact.phone_number if message.contact else False:
-        bot.send_message(user_id, "Для начала, давайте заполним некоторые дополнительные данные.")
-        bot.send_message(user_id, "Введите ваше номер телефона:")
-        bot.register_next_step_handler(message, check_handle_phone_number)
+
     else:
-        bot.send_message(user_id, "Добро пожаловать обратно!, tipa regestratsiya otboldi")
+        keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+        reg_button = types.KeyboardButton(text="Nomeringizni taqdim eting", request_contact=True)
+        keyboard.add(reg_button)
+        response = bot.send_message(message.chat.id,
+                                    "You should share your phone number",
+                                    reply_markup=keyboard)
+        bot.register_next_step_handler(message, check_handle_phone_number)
 
 
 def check_handle_phone_number(message):
     user_id = message.from_user.id
-    phone_number = message.text
-    # ToDo: checking if phone number written valid
+    print(message.contact.phone_number)
+    phone_number = message.contact.phone_number
     user_info[user_id]['phone_number'] = phone_number
     if phone_number:
         cursor.execute("SELECT * FROM admin_page_app_employee WHERE phone_number=?", (phone_number,))
         existing_user = cursor.fetchone()
 
         if existing_user:
-            bot.send_message(phone_number, "Добро пожаловать обратно!")
+            keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+            yes_button = types.KeyboardButton(text="Xa 🟢")
+            no_button = types.KeyboardButton(text="Yoq 🔴, boshqa nomer teraman")
+            keyboard.add(yes_button, no_button)
+            bot.send_message(user_id, "Bu nomerga akk bor, ikta akkni ulashi xolisizmi", reply_markup=keyboard)
+            bot.register_next_step_handler(message, handle_user_id_relations)
         else:
-            bot.send_message(phone_number, "Yengi useraka, keyingi stepga otamiz")
-            bot.send_message(phone_number, "Введите ваше имя:")
+            bot.send_message(user_id, "Yengi useraka, keyingi stepga otamiz")
+            bot.send_message(user_id, "Введите ваше имя:")
             bot.register_next_step_handler(message, handle_name)
 
+
+def handle_user_id_relations(message):
+    if message.text == "Xa":
+        # ToDo: add user_id to accounts_reletion table
+        ...
+    elif message.text == "Yoq, boshqa nomer teraman":
+        bot.send_message(user_id, "nomer tering! masalan: 901231212")
+        bot.register_next_step_handler(message, handle_phone)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True, row_width=2)
+        yes_button = types.KeyboardButton(text="Xa")
+        no_button = types.KeyboardButton(text="Yoq, boshqa nomer teraman")
+        keyboard.add(yes_button, no_button)
+        bot.send_message(user_id, "Soobsheniyezi chunmadin, pasdigi knopkaladan bittasini ishlatin:", reply_markup=keyboard)
+        bot.register_next_step_handler(message, handle_user_id_relations)
 
 def handle_phone(message):
     phone_number = message.text
     user_info[phone_number] = {}
-    bot.send_message(phone_number, "Thank you. Now we can proceed.")
+    bot.send_message(user_id, "Thank you. Now we can proceed.")
 
     print(user_info[user_id]['phone_number'])
     bot.send_message(user_id, "Введите ваше имя как указано в паспорте:")
@@ -84,49 +107,53 @@ def insert_all_user_data(message):
 
     bot.send_message(user_id,
                      "Отлично! Теперь вы можете использовать команду /jobs для просмотра доступных действий.")
-    
-# @bot.message_handler(commands=['add_proposal'])
-# def handle_add_proposal(message):
-#     set_user_state(message.chat.id, "ADD_ORDER")
-#     bot.send_message(message.from_user.id, "Please enter the order ID.")
-#     bot.register_next_step_handler(message, handle_order)
-#
-# def handle_order(func=lambda message: get_user_state(message.chat.id) == "ADD_ORDER"):
-#     set_user_data(message.chat.id, "order", message.text)
-#     set_user_state(message.chat.id, "ADD_MESSAGE")
-#     bot.send_message(message.from_user.id, "Please enter your message to the order owner.")
-#     bot.register_next_step_handler(message, handle_message)
-#
-# @bot.message_handler(func=lambda message: get_user_state(message.chat.id) == "ADD_MESSAGE")
-# def handle_message(message):
-#     set_user_data(message.chat.id, "message", message.text)
-#     set_user_state(message.chat.id, "ADD_PRICE")
-#     bot.reply_to(message, "Please set the price.")
-#
-# @bot.message_handler(func=lambda message: get_user_state(message.chat.id) == "ADD_PRICE")
-# def handle_price(message):
-#     set_user_data(message.chat.id, "price", message.text)
-#     set_user_data(message.chat.id, "owner", message.from_user.id)
-#     set_user_state(message.chat.id, "DONE")
-#
-#     # Save to db
-#     conn = sqlite3.connect('your_database.db')  # replace with your database
-#     c = conn.cursor()
-#     c.execute("INSERT INTO admin_page_app_proposal (owner, order, message, price) VALUES (?, ?, ?, ?)",
-#               (get_user_data(message.chat.id, "owner"), get_user_data(message.chat.id, "order"),
-#                get_user_data(message.chat.id, "message"), get_user_data(message.chat.id, "price")))
-#     conn.commit()
-#
-#     bot.reply_to(message, "Proposal has been added successfully.")
-#
+
+
+proposals = {}
+@bot.message_handler(commands=['add_proposal'])
+def handle_add_proposal(message):
+    proposals[message.from_user.id] = {}
+    bot.send_message(message.from_user.id, "Please enter the order ID.")
+    bot.register_next_step_handler(message, handle_order)
+
+
+def handle_order(message):
+    user_id = message.from_user.id
+    order_id = message.text
+    proposals[user_id]['order_id'] = order_id
+    bot.send_message(user_id, "Please enter your message to the order owner.")
+    bot.register_next_step_handler(message, handle_message)
+
+
+def handle_message(message):
+    user_id = message.from_user.id
+    message_text = message.text
+    proposals[user_id]['message'] = message_text
+    bot.send_message(message, "Please set the price.")
+    bot.register_next_step_handler(message, handle_price)
+
+
+def handle_price(message):
+    user_id = message.from_user.id
+    price = message.text
+    proposals[user_id]['price'] = price
+
+    for user_id, proposal_data in proposals.items():
+        cursor.execute("INSERT INTO admin_page_app_proposal (message, price, order_id, owner_id) VALUES (?, ?, ?, ?)",
+                      (proposal_data['message'], proposal_data['price'], proposal_data['order_id'], user_id))
+
+    conn.commit()
+
+    bot.send_message(message, "Отлично! Теперь вы можете использовать команду /proposals для просмотра доступных proposallar.")
+
 
 @bot.message_handler(commands=['proposals'])
 def list_job_proposals(message):
     user_id = message.chat.id
-    cursor.execute("SELECT id FROM admin_page_app_employee where user_id=?", (user_id,))
-    id = cursor.fetchone()
-    print(id)
-    cursor.execute("SELECT * FROM admin_page_app_proposal WHERE owner_id=?", (id,))
+    # cursor.execute("SELECT owner_id FROM admin_page_app_employee where user_id=?", (user_id,))
+    # id = cursor.fetchone()
+    # print(id)
+    cursor.execute("SELECT * FROM admin_page_app_proposal WHERE owner_id=?", (user_id,))
     proposals = cursor.fetchall()
     print(proposals)
 
@@ -134,7 +161,7 @@ def list_job_proposals(message):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(text='Edit', callback_data=f'edit_{proposal[0]}'),
                    types.InlineKeyboardButton(text='Cancel', callback_data=f'cancel_{proposal[0]}'))
-        bot.send_message(chat_id, f'Proposal {proposal[0]}: {proposal[1]}', reply_markup=markup)
+        bot.send_message(user_id, f'Proposal {proposal[0]}: {proposal[1]}', reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def query_handler(call):
